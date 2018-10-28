@@ -26,6 +26,32 @@ namespace MeadBros.Controllers
             });
         }
 
+        [HttpGet("[action]")]
+        public bool JoinLobby(string lobbyCode)
+        {
+            return true;
+        }
+
+        [HttpGet("[action]")]
+        public string LeaveLobby(string lobbyCode)
+        {
+            return lobbyCode;
+        }
+
+        [HttpGet("[action]")]
+        public string CreateLobby()
+        {
+            var possibleChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            var stringChars = new char[8];
+            var random = new Random();
+
+            for (int i = 0; i < stringChars.Length; i++)
+            {
+                stringChars[i] = possibleChars[random.Next(possibleChars.Length)];
+            }
+            return new string(stringChars);
+        }
+
         public class WeatherForecast
         {
             public string DateFormatted { get; set; }

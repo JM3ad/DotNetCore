@@ -1,30 +1,65 @@
 import * as React from 'react';
 import { RouteComponentProps } from 'react-router-dom';
+import { connect } from 'react-redux';
+import * as GameStore from '../store/Game';
+import { ApplicationState } from '../store';
 
-export default class Play extends React.Component<RouteComponentProps<{}>, {}> {
+type GameProps =
+    GameStore.GameState
+    & typeof GameStore.actionCreators
+    & RouteComponentProps<{}>;
+
+interface GameState {
+    currentLobbyText: string;
+}
+
+class Play extends React.Component<GameProps, GameState> {
+
+    constructor(props: GameProps) {
+        super(props);
+        this.state = { currentLobbyText: '' };
+        this.handleLobbyTextUpdate = this.handleLobbyTextUpdate.bind(this);
+    }
+
     public render() {
         return <div>
-            <div>&nbsp;</div>
-            <div>
-                <div>&nbsp;</div>
-                <div>
-                    User..........<input type="text" id="userInput" />
-                    <br />
-                    Message...<input type="text" id="messageInput" />
-                    <input type="button" id="sendButton" value="Send Message" />
-                </div>
+            {this.renderLobbyCode()}
+            {this.renderJoiningButtons()}
+        </div>;          
+    }
+
+    private renderJoiningButtons() {
+        if (this.props.hasJoinedLobby) {
+            return <div>
+                <input type="button" id="leaveLobbyButton" onClick={() => { this.props.leaveLobbyRequest(this.props.lobby) }} value="Leave Lobby" />
+                {this.renderMessages()}
+            </div>;
+        }
+        return <div>
+            Lobby: <input type="text" id="lobbyInput" value={this.state.currentLobbyText} onChange={this.handleLobbyTextUpdate} />
+            <input type="button" id="joinLobbyButton" onClick={() => { this.props.joinLobbyRequest(this.state.currentLobbyText) }} value="Join Lobby" />
+            <input type="button" id="createLobbyButton" onClick={() => { this.props.createLobbyRequest() }} value="Create Lobby" />
+        </div>
+    }
+
+    private handleLobbyTextUpdate(event: React.FormEvent<HTMLInputElement>) {
+        this.setState({ currentLobbyText: event.currentTarget.value });
+    }
+
+    private renderMessages() {
+        return <div>
+            Messages here
             </div>
-            <div>
-                <div>
-                    <hr />
-                </div>
-            </div>
-            <div>
-                <div>&nbsp;</div>
-                <div>
-                    <ul id="messagesList"></ul>
-                </div>
-            </div>
+    }
+
+    private renderLobbyCode() {
+        return <div>
+            <p>Lobby Code: <span id="lobbyCode">{this.props.lobby}</span></p>
         </div>;
     }
 }
+
+export default connect(
+    (state: ApplicationState) => state.game, // Selects which state properties are merged into the component's props
+    GameStore.actionCreators                 // Selects which action creators are merged into the component's props
+)(Play) as typeof Play;
