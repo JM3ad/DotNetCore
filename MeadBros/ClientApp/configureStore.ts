@@ -4,14 +4,18 @@ import { routerReducer, routerMiddleware } from 'react-router-redux';
 import * as StoreModule from './store';
 import { ApplicationState, reducers } from './store';
 import { History } from 'history';
+import * as SignalR from '@aspnet/signalr';
+import { SendMessageAction } from './store/Game';
+
+const connection = new SignalR.HubConnectionBuilder().withUrl('http://localhost:60925/ChatHub').build();
 
 export default function configureStore(history: History, initialState?: ApplicationState) {
     // Build middleware. These are functions that can process the actions before they reach the store.
     const windowIfDefined = typeof window === 'undefined' ? null : window as any;
     // If devTools is installed, connect to it
     const devToolsExtension = windowIfDefined && windowIfDefined.__REDUX_DEVTOOLS_EXTENSION__ as () => GenericStoreEnhancer;
-    const createStoreWithMiddleware = compose(
-        applyMiddleware(thunk, routerMiddleware(history)),
+    const createStoreWithMiddleware = compose < StoreEnhancerStoreCreator<any>>(
+        applyMiddleware(thunk, routerMiddleware(history), signalRInvokeMiddleware),
         devToolsExtension ? devToolsExtension() : <S>(next: StoreEnhancerStoreCreator<S>) => next
     )(createStore);
 
@@ -27,7 +31,30 @@ export default function configureStore(history: History, initialState?: Applicat
         });
     }
 
+    signalRRegisterCommands(store, () => {});
+
     return store;
+}
+
+export function signalRInvokeMiddleware(store: any) {
+    return (next: any) => async (action: any) => {
+        switch (action.type) {
+            case "SEND_MESSAGE":
+                connection.invoke('SendMessage', action.message);
+                break;
+        }
+        return next(action);
+    }
+}
+
+export function signalRRegisterCommands(store: any, callback: Function) {
+
+    connection.on('ReceiveMessage', data => {
+        store.dispatch({ type: 'RECEIVE_MESSAGE', message: data});
+    });
+
+    connection.start().then(callback());
+
 }
 
 function buildRootReducer(allReducers: ReducersMapObject) {

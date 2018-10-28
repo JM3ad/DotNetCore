@@ -8,11 +8,13 @@ import { fetch, addTask } from 'domain-task';
 export interface GameState {
     lobby: string;
     hasJoinedLobby: boolean;
+    messages: string[];
 }
 
 const unloadedState: GameState = {
     lobby: '',
-    hasJoinedLobby: false
+    hasJoinedLobby: false,
+    messages: []
 }
 
 // -----------------
@@ -24,10 +26,14 @@ interface JoinLobbyRequestAction { type: 'JOIN_LOBBY_REQUEST' }
 interface LeaveLobbyAction { type: 'LEAVE_LOBBY'; lobby: string }
 interface JoinLobbyAction { type: 'JOIN_LOBBY'; lobby: string }
 interface CreateLobbyRequestAction { type: 'CREATE_LOBBY_REQUEST' }
+export interface SendMessageAction { type: 'SEND_MESSAGE'; message: string }
+interface ReceiveMessageAction { type: 'RECEIVE_MESSAGE'; message: string }
 
 // Declare a 'discriminated union' type. This guarantees that all references to 'type' properties contain one of the
 // declared type strings (and not any other arbitrary string).
-type KnownAction = JoinLobbyRequestAction | JoinLobbyAction | CreateLobbyRequestAction | LeaveLobbyAction;
+type KnownAction = JoinLobbyRequestAction | JoinLobbyAction |
+    CreateLobbyRequestAction | LeaveLobbyAction |
+    SendMessageAction | ReceiveMessageAction;
 
 // ----------------
 // ACTION CREATORS - These are functions exposed to UI components that will trigger a state transition.
@@ -49,7 +55,10 @@ export const actionCreators = {
             dispatch({ type: 'JOIN_LOBBY_REQUEST' });
         }
     },
-    joinLobby: (code: string) => <JoinLobbyAction>{ type: 'JOIN_LOBBY', lobby: code },
+    joinLobby: (lobby: string): AppThunkAction<KnownAction> => (dispatch, getState) => {
+        
+        dispatch({ type: 'JOIN_LOBBY', lobby: lobby });
+    },
     createLobbyRequest: (): AppThunkAction<KnownAction> => (dispatch, getState) => {
         // Only load data if it's something we don't already have (and are not already loading)
         let fetchTask = fetch(`api/SampleData/createLobby`)
@@ -70,6 +79,9 @@ export const actionCreators = {
                 }
             });
         addTask(fetchTask); // Ensure server-side prerendering waits for this to complete
+    },
+    sendMessage: (message: string): AppThunkAction<KnownAction> => (dispatch, getState) => {
+        dispatch({ type: 'SEND_MESSAGE', message: message })
     }
 };
 
@@ -81,7 +93,8 @@ export const reducer: Reducer<GameState> = (state: GameState, action: KnownActio
         case 'JOIN_LOBBY':
             return {
                 lobby: action.lobby,
-                hasJoinedLobby: true
+                hasJoinedLobby: true,
+                messages: []
             };
         case 'CREATE_LOBBY_REQUEST':
             return state;
@@ -91,6 +104,14 @@ export const reducer: Reducer<GameState> = (state: GameState, action: KnownActio
             if (action.lobby == state.lobby) {
                 return unloadedState;
             }
+            return state;
+        case 'RECEIVE_MESSAGE':
+            console.log('receiving?');
+            return {
+                ...state,
+                messages: state.messages.concat(action.message)
+            }
+        case 'SEND_MESSAGE':
             return state;
         default:
             // The following line guarantees that every action in the KnownAction union has been covered by a case above
