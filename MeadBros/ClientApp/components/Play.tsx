@@ -21,6 +21,7 @@ class Play extends React.Component<GameProps, GameState> {
         this.state = { currentLobbyText: '', message: '' };
         this.handleLobbyTextUpdate = this.handleLobbyTextUpdate.bind(this);
         this.handleMessageUpdate = this.handleMessageUpdate.bind(this);
+        this.props.startListening();
     }
 
     public render() {
@@ -50,7 +51,7 @@ class Play extends React.Component<GameProps, GameState> {
                 return <p>{message}</p>
             })}
             Message: <input type="text" id="messageInput" value={this.state.message} onChange={this.handleMessageUpdate} />
-            <input type="button" id="sendMessageButton" onClick={() => { this.props.sendMessage(this.state.message) }} value="Send" />
+            <input type="button" id="sendMessageButton" onClick={() => { this.sendMessage() }} value="Send" />
             </div>
     }
 
@@ -66,6 +67,11 @@ class Play extends React.Component<GameProps, GameState> {
 
     private handleLobbyTextUpdate(event: React.FormEvent<HTMLInputElement>) {
         this.setState({ currentLobbyText: event.currentTarget.value });
+    }
+
+    private sendMessage() {
+        this.props.sendMessage(this.state.message, this.props.lobby);
+        this.setState({ message: '' });;
     }
 }
 
