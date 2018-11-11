@@ -24,11 +24,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Remove="ClientApp\store\Game.ts" />
+    <None Remove="ClientApp\store\Deception.ts" />
+    <None Remove="ClientApp\store\Lobby.ts" />
   </ItemGroup>
 
   <ItemGroup>
-    <TypeScriptCompile Include="ClientApp\store\Game.ts" />
+    <TypeScriptCompile Include="ClientApp\store\Deception.ts" />
+    <TypeScriptCompile Include="ClientApp\store\Lobby.ts" />
   </ItemGroup>
 
   <Target Name="DebugRunWebpack" BeforeTargets="Build" Condition=" '$(Configuration)' == 'Debug' And !Exists('wwwroot\dist') ">

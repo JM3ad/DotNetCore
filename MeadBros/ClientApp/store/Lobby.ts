@@ -1,4 +1,5 @@
-﻿import { Action, Reducer, ActionCreator} from 'redux';
+﻿import { Action, Reducer, ActionCreator } from 'redux';
+import { push } from 'react-router-redux';
 import { AppThunkAction } from '.';
 import { fetch, addTask } from 'domain-task';
 import { connection } from '../configureStore';
@@ -6,15 +7,17 @@ import { connection } from '../configureStore';
 // -----------------
 // STATE - This defines the type of data maintained in the Redux store.
 
-export interface GameState {
+export interface LobbyState {
     lobby: string;
     hasJoinedLobby: boolean;
+    hasGameStarted: boolean;
     messages: string[];
 }
 
-const unloadedState: GameState = {
+const unloadedState: LobbyState = {
     lobby: '',
     hasJoinedLobby: false,
+    hasGameStarted: false,
     messages: []
 }
 
@@ -23,18 +26,21 @@ const unloadedState: GameState = {
 // They do not themselves have any side-effects; they just describe something that is going to happen.
 // Use @typeName and isActionType for type detection that works even after serialization/deserialization.
 
-interface JoinLobbyRequestAction { type: 'JOIN_LOBBY_REQUEST' }
-interface LeaveLobbyAction { type: 'LEAVE_LOBBY'; lobby: string }
-interface JoinLobbyAction { type: 'JOIN_LOBBY'; lobby: string }
-interface CreateLobbyRequestAction { type: 'CREATE_LOBBY_REQUEST' }
-interface SendMessageAction { type: 'SEND_MESSAGE'; message: string }
-interface ReceiveMessageAction { type: 'RECEIVE_MESSAGE'; message: string }
+interface JoinLobbyRequestAction { type: 'JOIN_LOBBY_REQUEST' };
+interface JoinLobbyAction { type: 'JOIN_LOBBY'; lobby: string };
+interface GameStartedAction { type: 'GAME_STARTED' };
+interface LeaveLobbyAction { type: 'LEAVE_LOBBY'; lobby: string };
+interface CreateLobbyRequestAction { type: 'CREATE_LOBBY_REQUEST' };
+interface SendMessageAction { type: 'SEND_MESSAGE'; message: string };
+interface ReceiveMessageAction { type: 'RECEIVE_MESSAGE'; message: string };
+interface FailedJoinLobbyAction { type: 'FAILED_JOIN_LOBBY'; lobby: string };
 
 // Declare a 'discriminated union' type. This guarantees that all references to 'type' properties contain one of the
 // declared type strings (and not any other arbitrary string).
 type KnownAction = JoinLobbyRequestAction | JoinLobbyAction |
     CreateLobbyRequestAction | LeaveLobbyAction |
-    SendMessageAction | ReceiveMessageAction;
+    SendMessageAction | ReceiveMessageAction |
+    FailedJoinLobbyAction | GameStartedAction;
 
 // ----------------
 // ACTION CREATORS - These are functions exposed to UI components that will trigger a state transition.
@@ -45,26 +51,28 @@ export const actionCreators = {
         connection.on('ReceiveMessage', data => {
             dispatch({ type: 'RECEIVE_MESSAGE', message: data });
         });
+        connection.on('FailedJoinLobby', data => {
+            dispatch({ type: 'FAILED_JOIN_LOBBY', lobby: data });
+        });
+        connection.on('JoinedLobby', data => {
+            dispatch({ type: 'JOIN_LOBBY', lobby: data });
+        });
+        connection.on('GameStarted', data => {
+            dispatch({ type: 'GAME_STARTED' });
+        });
+    },
+    startGame: (lobby: string): AppThunkAction<KnownAction> => (dispatch, getState) => {
+        connection.invoke('StartGame', lobby);
     },
     joinLobbyRequest: (lobby: string): AppThunkAction<KnownAction> => (dispatch, getState) => {
         // Only load data if it's something we don't already have (and are not already loading)
-        if (lobby !== getState().game.lobby) {
+        if (lobby !== getState().lobby.lobby) {
             connection.invoke('JoinLobby', lobby);
             dispatch({ type: 'JOIN_LOBBY', lobby });
         }
     },
-    joinLobby: (lobby: string): AppThunkAction<KnownAction> => (dispatch, getState) => {
-        
-        dispatch({ type: 'JOIN_LOBBY', lobby: lobby });
-    },
     createLobbyRequest: (): AppThunkAction<KnownAction> => (dispatch, getState) => {
-        // Only load data if it's something we don't already have (and are not already loading)
-        let fetchTask = fetch(`api/SampleData/createLobby`)
-        .then(response => response.text() as Promise<string>)
-            .then(data => {
-            dispatch({ type: 'JOIN_LOBBY', lobby: data });
-        });
-        addTask(fetchTask); // Ensure server-side prerendering waits for this to complete
+        connection.invoke('CreateLobby');
     },
     leaveLobbyRequest: (lobby: string): AppThunkAction<KnownAction> => (dispatch, getState) => {
         connection.invoke('LeaveLobby', lobby);
@@ -78,12 +86,13 @@ export const actionCreators = {
 // ----------------
 // REDUCER - For a given state and action, returns the new state. To support time travel, this must not mutate the old state.
 
-export const reducer: Reducer<GameState> = (state: GameState, action: KnownAction) => {
+export const reducer: Reducer<LobbyState> = (state: LobbyState, action: KnownAction) => {
     switch (action.type) {
         case 'JOIN_LOBBY':
             return {
                 lobby: action.lobby,
                 hasJoinedLobby: true,
+                hasGameStarted: false,
                 messages: []
             };
         case 'CREATE_LOBBY_REQUEST':
@@ -102,6 +111,21 @@ export const reducer: Reducer<GameState> = (state: GameState, action: KnownActio
             }
         case 'SEND_MESSAGE':
             return state;
+        case 'FAILED_JOIN_LOBBY':
+            if (action.lobby != state.lobby) {
+                return state;
+            }
+            return {
+                ...state,
+                hasJoinedLobby: false,
+                lobby: ''
+                //This should return an error message
+            }
+        case 'GAME_STARTED':
+            return {
+                ...state,
+                hasGameStarted: true
+            }
         default:
             // The following line guarantees that every action in the KnownAction union has been covered by a case above
             const exhaustiveCheck: never = action;

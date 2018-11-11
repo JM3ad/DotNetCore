@@ -1,22 +1,24 @@
 import * as React from 'react';
 import { RouteComponentProps } from 'react-router-dom';
 import { connect } from 'react-redux';
-import * as GameStore from '../store/Game';
+import * as LobbyStore from '../store/Lobby';
 import { ApplicationState } from '../store';
+import { NavLink, Link } from 'react-router-dom';
+import { Component } from 'react';
 
-type GameProps =
-    GameStore.GameState
-    & typeof GameStore.actionCreators
+type LobbyProps =
+    LobbyStore.LobbyState
+    & typeof LobbyStore.actionCreators
     & RouteComponentProps<{}>;
 
-interface GameState {
+interface LobbyState {
     currentLobbyText: string;
     message: string;
 }
 
-class Play extends React.Component<GameProps, GameState> {
+class Lobby extends React.Component<LobbyProps, LobbyState> {
 
-    constructor(props: GameProps) {
+    constructor(props: LobbyProps) {
         super(props);
         this.state = { currentLobbyText: '', message: '' };
         this.handleLobbyTextUpdate = this.handleLobbyTextUpdate.bind(this);
@@ -24,20 +26,37 @@ class Play extends React.Component<GameProps, GameState> {
         this.props.startListening();
     }
 
+    componentDidUpdate() {
+        if (this.props.hasGameStarted) {
+            this.props.history.push('/game');
+        }
+    }
+
     public render() {
         return <div>
             {this.renderLobbyCode()}
-            {this.renderJoiningButtons()}
+            {this.renderLobby()}
         </div>;          
     }
 
-    private renderJoiningButtons() {
+    private renderLobbyCode() {
+        return <div>
+            <p>Game Code: <span id="lobbyCode">{this.props.lobby}</span></p>
+        </div>;
+    }
+
+    private renderLobby() {
         if (this.props.hasJoinedLobby) {
             return <div>
                 <input type="button" id="leaveLobbyButton" onClick={() => { this.props.leaveLobbyRequest(this.props.lobby) }} value="Leave Lobby" />
-                {this.renderMessages()}
+                <input type="button" id="startGameButton" onClick={() => { this.props.startGame(this.props.lobby) }} value="Start Game" />
+                {this.renderInLobby()}
             </div>;
         }
+        return <div>{this.renderOutOfLobby()}</div>;
+    }
+
+    private renderOutOfLobby() {
         return <div>
             Lobby: <input type="text" id="lobbyInput" value={this.state.currentLobbyText} onChange={this.handleLobbyTextUpdate} />
             <input type="button" id="joinLobbyButton" onClick={() => { this.props.joinLobbyRequest(this.state.currentLobbyText) }} value="Join Lobby" />
@@ -45,20 +64,23 @@ class Play extends React.Component<GameProps, GameState> {
         </div>
     }
 
-    private renderMessages() {
+    private renderInLobby() {
         return <div>
-            {this.props.messages.map((message, i) => {
-                return <p>{message}</p>
-            })}
+                <div>
+                    {this.renderGameOptions()}
+                </div>
+            <div id="message-container">
+                {this.props.messages.map((message, i) => {
+                    return <p>{message}</p>
+                })}
+            </div>
             Message: <input type="text" id="messageInput" value={this.state.message} onChange={this.handleMessageUpdate} />
             <input type="button" id="sendMessageButton" onClick={() => { this.sendMessage() }} value="Send" />
             </div>
     }
 
-    private renderLobbyCode() {
-        return <div>
-            <p>Lobby Code: <span id="lobbyCode">{this.props.lobby}</span></p>
-        </div>;
+    private renderGameOptions() {
+        return <div></div>
     }
 
     private handleMessageUpdate(event: React.FormEvent<HTMLInputElement>) {
@@ -76,6 +98,6 @@ class Play extends React.Component<GameProps, GameState> {
 }
 
 export default connect(
-    (state: ApplicationState) => state.game, // Selects which state properties are merged into the component's props
-    GameStore.actionCreators                 // Selects which action creators are merged into the component's props
-)(Play) as typeof Play;
+    (state: ApplicationState) => state.lobby, // Selects which state properties are merged into the component's props
+    LobbyStore.actionCreators                 // Selects which action creators are merged into the component's props
+)(Lobby) as typeof Lobby;
