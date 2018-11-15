@@ -94,7 +94,28 @@ namespace MeadBros.Hubs
             var game = groupCount[lobby];
             var success = game.DidDefeatAttack();
             game.StartNextRound();
-            return Clients.Group(lobby).SendAsync("AmbushResult", success);
+            Clients.Group(lobby).SendAsync("AmbushResult", success);
+            if (!game.IsFinished())
+            {
+                return SendPlayerHints(lobby);
+            }
+            return SendGameCompletedState(lobby);
+        }
+
+        public Task SendPlayerHints(string lobby)
+        {
+            var game = groupCount[lobby];
+            foreach (var player in game.players)
+            {
+                Clients.Client(player.connectionId).SendAsync("ReceiveHint", game.GetHintForPlayer(player));
+            }
+            return Task.CompletedTask;
+        }
+
+        public Task SendGameCompletedState(string lobby)
+        {
+            var game = groupCount[lobby];
+            return Clients.Group(lobby).SendAsync("GameComplete", game.HaveCaptainsWon());
         }
 
         public Task SendMessage(string message, string lobby)

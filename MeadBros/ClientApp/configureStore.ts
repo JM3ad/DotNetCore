@@ -6,7 +6,9 @@ import { ApplicationState, reducers } from './store';
 import { History } from 'history';
 import * as SignalR from '@aspnet/signalr';
 
-export const connection = new SignalR.HubConnectionBuilder().withUrl('http://localhost:60925/GameHub').build();
+declare var HOST_URL: string;
+
+export const connection = new SignalR.HubConnectionBuilder().withUrl(HOST_URL).build();
 
 export default function configureStore(history: History, initialState?: ApplicationState) {
     // Build middleware. These are functions that can process the actions before they reach the store.

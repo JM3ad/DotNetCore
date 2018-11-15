@@ -21,7 +21,12 @@ module.exports = (env) => {
                 { test: /\.(png|jpg|jpeg|gif|svg)$/, use: 'url-loader?limit=25000' }
             ]
         },
-        plugins: [new CheckerPlugin()]
+        plugins: [
+            new CheckerPlugin(),
+            new webpack.DefinePlugin({
+                'HOST_URL': isDevBuild ? JSON.stringify('http://localhost:60925/GameHub') : JSON.stringify('http://www.meadbros.co.uk/GameHub')
+            })
+        ]
     });
 
     // Configuration for client-side bundle suitable for running in browsers

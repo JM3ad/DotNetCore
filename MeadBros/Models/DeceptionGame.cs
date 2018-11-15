@@ -9,10 +9,12 @@ namespace MeadBros.Models
     {
         public List<DeceptionPlayer> players = new List<DeceptionPlayer>();
         public List<Direction> attacks = new List<Direction>();
+        public List<bool> defeatedOrcs = new List<bool>();
         public string lobby;
         public static Dictionary<Direction, int> votes = GetResetVotes();
         private int roundNumber = 0;
         private const int numberOfRounds = 5;
+        private const int failuresAllowed = 2;
 
         public void GenerateGame()
         {
@@ -81,6 +83,38 @@ namespace MeadBros.Models
         public bool IsEmpty()
         {
             return players.Count == 0;
+        }
+
+        public string GetHintForPlayer(DeceptionPlayer player)
+        {
+            if (player.IsUndercover)
+            {
+                return $"They're coming from the {attacks[roundNumber]}!";
+            }
+            return $"Doesn't sound like they're coming from the {GenerateIntel()}";
+        }
+
+        public bool HaveCaptainsWon()
+        {
+            return numberOfRounds == roundNumber && defeatedOrcs.Sum(result => result ? 1 : 0) < numberOfRounds - failuresAllowed;
+        }
+
+        private string GenerateIntel()
+        {
+            var rand = new Random();
+            if (rand.Next(20) <= 1)
+            {
+                return attacks[roundNumber].ToString();
+            }
+            var directions = new List<Direction>
+            {
+                Direction.North,
+                Direction.East,
+                Direction.South,
+                Direction.West
+            };
+            directions.Remove(attacks[roundNumber]);
+            return directions.OrderBy(x => rand.NextDouble()).First().ToString();
         }
 
         private Direction GenerateRandomDirection()

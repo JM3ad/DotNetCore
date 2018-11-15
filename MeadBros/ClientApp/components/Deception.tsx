@@ -40,8 +40,22 @@ class Deception extends React.Component<DeceptionProps, DeceptionState> {
                 })}
             </div>
             {this.renderAmbushSuccess()}
+            {this.renderHint()}
             {this.renderVoteButtons()}
+            {this.renderResult()}
             </div>
+    }
+
+    private renderHint() {
+        if (!!this.props.hint) {
+            return <div> {this.props.hint}</div>;
+        }
+    }
+
+    private renderResult() {
+        if (this.props.gameOver) {
+            return <div> Captains won: {this.props.gameResult} </div>;
+        }
     }
 
     private renderAmbushSuccess() {

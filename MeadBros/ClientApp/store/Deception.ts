@@ -16,7 +16,10 @@ export interface DeceptionState {
     isUndercover: boolean,
     voteResult: Direction[],
     ambushWasSuccess: boolean,
-    hasVotedThisRound: boolean
+    hasVotedThisRound: boolean,
+    hint: string,
+    gameResult: boolean,
+    gameOver: boolean
 }
 
 const unloadedState: DeceptionState = {
@@ -24,7 +27,10 @@ const unloadedState: DeceptionState = {
     isUndercover: false,
     voteResult: [],
     ambushWasSuccess: false,
-    hasVotedThisRound: false
+    hasVotedThisRound: false,
+    hint: '',
+    gameResult: false,
+    gameOver: false
 }
 
 // -----------------
@@ -37,10 +43,12 @@ interface VoteAction { type: 'VOTE' };
 interface ReceiveVoteResults { type: 'RECEIVE_VOTE_RESULTS'; votes: Direction[] };
 interface ReceiveAmbushResults { type: 'RECEIVE_AMBUSH_RESULTS'; ambushSucceeded: boolean };
 interface ReceivePlayerRole { type: 'RECEIVE_PLAYER_ROLE'; isUndercover: boolean };
+interface ReceiveHint{ type: 'RECEIVE_HINT'; hint: string };
+interface ReceiveGameResult { type: 'GAME_COMPLETE'; result: boolean };
 
 // Declare a 'discriminated union' type. This guarantees that all references to 'type' properties contain one of the
 // declared type strings (and not any other arbitrary string).
-type KnownAction = InitialiseAction | VoteAction | ReceiveVoteResults | ReceiveAmbushResults | ReceivePlayerRole;
+type KnownAction = InitialiseAction | VoteAction | ReceiveVoteResults | ReceiveAmbushResults | ReceivePlayerRole | ReceiveHint | ReceiveGameResult;
 
 // ----------------
 // ACTION CREATORS - These are functions exposed to UI components that will trigger a state transition.
@@ -57,6 +65,12 @@ export const actionCreators = {
         connection.on('AmbushResult', data => {
             dispatch({ type: 'RECEIVE_AMBUSH_RESULTS', ambushSucceeded: data });
         });
+        connection.on('ReceiveHint', data => {
+            dispatch({ type: 'RECEIVE_HINT', hint: data });
+        });
+        connection.on('GameComplete', data => {
+            dispatch({ type: 'GAME_COMPLETE', result: data });
+        });
         dispatch({ type: 'INITIALISE', lobby: getState().lobby.lobby });
         connection.invoke('SendPlayerDetails', getState().lobby.lobby);
     },
@@ -72,10 +86,10 @@ export const actionCreators = {
 export const reducer: Reducer<DeceptionState> = (state: DeceptionState, action: KnownAction) => {
     switch (action.type) {
         case 'RECEIVE_PLAYER_ROLE':
-            console.log(action.isUndercover);
             return {
                 ...state,
-                isUndercover: action.isUndercover
+                isUndercover: action.isUndercover,
+                gameOver: false
             };
         case 'RECEIVE_AMBUSH_RESULTS':
             return {
@@ -98,6 +112,17 @@ export const reducer: Reducer<DeceptionState> = (state: DeceptionState, action: 
             return {
                 ...state,
                 lobby: action.lobby
+            }
+        case 'GAME_COMPLETE':
+            return {
+                ...state,
+                gameResult: action.result,
+                gameOver: true
+            }
+        case 'RECEIVE_HINT':
+            return {
+                ...state,
+                hint: action.hint
             }
         default:
             // The following line guarantees that every action in the KnownAction union has been covered by a case above
