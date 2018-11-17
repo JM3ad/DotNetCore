@@ -20,10 +20,14 @@ namespace MeadBros.Models
         {
             GenerateAttackOrder(numberOfRounds);
             RandomiseAgent();
+            roundNumber = 0;
+            votes = GetResetVotes();
+            defeatedOrcs = new List<bool>();
         }
 
         private void GenerateAttackOrder(int numberOfRounds)
         {
+            attacks = new List<Direction>();
             for (int i = 0; i < numberOfRounds; i++)
             {
                 attacks.Add(GenerateRandomDirection());
@@ -33,6 +37,7 @@ namespace MeadBros.Models
         private void RandomiseAgent()
         {
             players.OrderBy(p => Guid.NewGuid());
+            players.ForEach(p => p.IsUndercover = false);
             players[0].IsUndercover = true;
         }
 

@@ -1,9 +1,7 @@
-import * as Lobby from './Lobby';
 import * as Deception from './Deception';
 
 // The top-level state object
 export interface ApplicationState {
-    lobby: Lobby.LobbyState;
     deception: Deception.DeceptionState;
 }
 
@@ -11,7 +9,6 @@ export interface ApplicationState {
 // the reducer with the matching name. It's important that the names match exactly, and that the reducer
 // acts on the corresponding ApplicationState property type.
 export const reducers = {
-    lobby: Lobby.reducer,
     deception: Deception.reducer
 };
 
