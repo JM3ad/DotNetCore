@@ -5,6 +5,6 @@ The website will be a .Net Core server, with a React/Redux front end app.
 
 TODO:
 Finish game logic
-HTTPS redirect
+Test & Confirm HTTPS redirect
 Improve signalR robustness
 Improve design - mobile particularly.
