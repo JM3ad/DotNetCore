@@ -24,7 +24,7 @@ module.exports = (env) => {
         plugins: [
             new CheckerPlugin(),
             new webpack.DefinePlugin({
-                'HOST_URL': isDevBuild ? JSON.stringify('http://localhost:60925/GameHub') : JSON.stringify('http://www.meadbros.co.uk/GameHub')
+                'HOST_URL': isDevBuild ? JSON.stringify('https://localhost:44385/GameHub') : JSON.stringify('https://www.meadbros.co.uk/GameHub')
             })
         ]
     });
