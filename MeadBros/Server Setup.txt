@@ -1,0 +1,26 @@
+Instructions for setting up a production server.
+
+Release Process:
+Nice & sophisticated release process:
+
+Publish the project through Visual Studio, to bin/Release/PublishOutput
+Copy the folder to the remote server
+(Make sure 'IIS AppPoolUser\Meadbros' has access to the folder via Properties -> Security )
+
+
+***Initial Setup***
+
+IIS:
+Add MeadBros site with bindings for www.meadbros.co.uk (http & https)
+Add Application Pool user MeadBros
+Basic Settings use Physical Path C:\MeadBros\Release\PublishOutput & the above AppPool user
+Copy the published folder to the above location, and ensure MeadBros AppPool user has security access to it
+
+Generating HTTPS certificate with Let's Encrypt
+1) On the server, download win-acme
+(https://github.com/PKISharp/win-acme)
+Extract the zip and run the executable
+Follow the instructions, and ensure the firewall is open to generic HTTP traffic
+
+DNS:
+Use GoDaddy to point the domain name at the EC2 instance's ip
