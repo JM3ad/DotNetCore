@@ -4,35 +4,36 @@ import { connect } from 'react-redux';
 import * as DeceptionStore from '../store/Deception';
 import { ApplicationState } from '../store';
 import { Direction } from '../store/Deception';
+import Lobby from './Lobby';
+import { KnownLobbyAction } from '../store/Lobby';
 
 export type DeceptionProps =
     DeceptionStore.DeceptionState
     & typeof DeceptionStore.actionCreators
     & RouteComponentProps<{}>;
 
-interface DeceptionState {
-    lobbyCode: string,
-    currentLobbyText: string
-}
+interface DeceptionState {}
 
 class Deception extends React.Component<DeceptionProps, DeceptionState> {
 
     constructor(props: DeceptionProps) {
         super(props);
-        this.state = { currentLobbyText: '', lobbyCode: '' };
-        this.handleLobbyTextUpdate = this.handleLobbyTextUpdate.bind(this);
         this.props.startListening();
     }
 
     public render() {
         if (!this.props.gameHasStarted) {
             return <div>
-                {this.renderLobby()}
+                <Lobby callbackHandler={this.lobbyCallbackHandler} hasJoinedLobby={this.props.lobby.hasJoinedLobby} lobbyCode={this.props.lobby.lobbyCode} />
             </div>
         }
         return <div>
             {this.renderGame()}
         </div>
+    }
+
+    lobbyCallbackHandler = (action: KnownLobbyAction) => {
+        this.props.dispatchLobbyChange(action);
     }
     
     private renderGame() {
@@ -117,35 +118,6 @@ class Deception extends React.Component<DeceptionProps, DeceptionState> {
                 <input type="button" id="voteWest" onClick={() => { this.props.vote(this.props.lobby.lobbyCode, DeceptionStore.Direction.West) }} value="West" />
             </div>
         }
-    }
-
-    private renderLobbyCode() {
-        return <div>
-            <p>Game Code: <span id="lobbyCode">{this.props.lobby.lobbyCode}</span></p>
-        </div>;
-    }
-
-    private renderLobby() {
-        if (this.props.lobby.hasJoinedLobby) {
-            return <div>
-                {this.renderLobbyCode()}
-                <input type="button" id="leaveLobbyButton" onClick={() => { this.props.leaveLobbyRequest(this.props.lobby.lobbyCode) }} value="Leave Lobby" />
-                <input type="button" id="startGameButton" onClick={() => { this.props.startGame(this.props.lobby.lobbyCode) }} value="Start Game" />
-            </div>;
-        }
-        return <div>{this.renderOutOfLobby()}</div>;
-    }
-
-    private renderOutOfLobby() {
-        return <div>
-            Lobby: <input type="text" id="lobbyInput" value={this.state.currentLobbyText} onChange={this.handleLobbyTextUpdate} />
-            <input type="button" id="joinLobbyButton" onClick={() => { this.props.joinLobbyRequest(this.state.currentLobbyText) }} value="Join Lobby" />
-            <input type="button" id="createLobbyButton" onClick={() => { this.props.createLobbyRequest() }} value="Create Lobby" />
-        </div>
-    }
-
-    private handleLobbyTextUpdate(event: React.FormEvent<HTMLInputElement>) {
-        this.setState({ currentLobbyText: event.currentTarget.value });
     }
 }
 

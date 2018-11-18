@@ -1,6 +1,7 @@
-﻿import { Action, Reducer, ActionCreator} from 'redux';
+﻿import { Reducer} from 'redux';
 import { AppThunkAction } from '.';
 import { connection } from '../configureStore';
+import * as Lobby from './Lobby';
 
 // -----------------
 // STATE - This defines the type of data maintained in the Redux store.
@@ -14,7 +15,7 @@ export enum Direction {
 export interface DeceptionState {
     gameHasStarted: boolean,
     game: DeceptionGameState,
-    lobby: LobbyState
+    lobby: Lobby.LobbyState
 }
 
 interface DeceptionGameState {
@@ -26,11 +27,6 @@ interface DeceptionGameState {
     hint: string,
     gameResult: boolean,
     gameOver: boolean
-}
-
-interface LobbyState {
-    lobbyCode: string,
-    hasJoinedLobby: boolean
 }
 
 const unloadedState: DeceptionState = {
@@ -45,10 +41,7 @@ const unloadedState: DeceptionState = {
         gameResult: false,
         gameOver: false
     },
-    lobby: {
-        lobbyCode: '',
-        hasJoinedLobby: false
-    }
+    lobby: Lobby.unloadedState
 }
 
 // -----------------
@@ -63,29 +56,22 @@ interface ReceiveAmbushResults { type: 'RECEIVE_AMBUSH_RESULTS'; ambushSucceeded
 interface ReceivePlayerRole { type: 'RECEIVE_PLAYER_ROLE'; isUndercover: boolean };
 interface ReceiveHint{ type: 'RECEIVE_HINT'; hint: string };
 interface ReceiveGameResult { type: 'GAME_COMPLETE'; result: boolean };
-interface JoinLobbyRequestAction { type: 'JOIN_LOBBY_REQUEST' };
-interface JoinLobbyAction { type: 'JOIN_LOBBY'; lobby: string };
 interface GameStartedAction { type: 'GAME_STARTED' };
-interface LeaveLobbyAction { type: 'LEAVE_LOBBY'; lobby: string };
-interface CreateLobbyRequestAction { type: 'CREATE_LOBBY_REQUEST' };
-interface FailedJoinLobbyAction { type: 'FAILED_JOIN_LOBBY'; lobby: string };
 interface ReturnToLobbyAction { type: 'RETURN_TO_LOBBY'; lobby: string };
+interface DispatchLobbyAction { type: 'LOBBY_ACTION'; action: Lobby.KnownLobbyAction };
 
 // Declare a 'discriminated union' type. This guarantees that all references to 'type' properties contain one of the
 // declared type strings (and not any other arbitrary string).
 type KnownAction = InitialiseAction | VoteAction | ReceiveVoteResults |
     ReceiveAmbushResults | ReceivePlayerRole | ReceiveHint | ReceiveGameResult |
-    JoinLobbyRequestAction | JoinLobbyAction |
-    CreateLobbyRequestAction | LeaveLobbyAction |
-    FailedJoinLobbyAction | GameStartedAction |
-    ReturnToLobbyAction;
+    GameStartedAction | ReturnToLobbyAction | DispatchLobbyAction;
 
 // ----------------
 // ACTION CREATORS - These are functions exposed to UI components that will trigger a state transition.
 // They don't directly mutate state, but they can have external side-effects (such as loading data).
-
 export const actionCreators = {
     startListening: (): AppThunkAction<KnownAction> => (dispatch, getState) => {
+        Lobby.startListening((action: Lobby.KnownLobbyAction) => { return dispatch({ type: 'LOBBY_ACTION', action: action })});
         connection.on('ReceiveDetails', data => {
             dispatch({ type: 'RECEIVE_PLAYER_ROLE', isUndercover: data });
         });
@@ -101,12 +87,6 @@ export const actionCreators = {
         connection.on('GameComplete', data => {
             dispatch({ type: 'GAME_COMPLETE', result: data });
         });
-        connection.on('FailedJoinLobby', data => {
-            dispatch({ type: 'FAILED_JOIN_LOBBY', lobby: data });
-        });
-        connection.on('JoinedLobby', data => {
-            dispatch({ type: 'JOIN_LOBBY', lobby: data });
-        });
         connection.on('GameStarted', data => {
             dispatch({ type: 'GAME_STARTED' });
         });
@@ -119,19 +99,11 @@ export const actionCreators = {
         connection.invoke('StartGame', lobby);
         connection.invoke('SendPlayerDetails', lobby);
     },
-    joinLobbyRequest: (lobby: string): AppThunkAction<KnownAction> => (dispatch, getState) => {
-            connection.invoke('JoinLobby', lobby);
-            dispatch({ type: 'JOIN_LOBBY', lobby });
-    },
-    createLobbyRequest: (): AppThunkAction<KnownAction> => (dispatch, getState) => {
-        connection.invoke('CreateLobby');
-    },
-    leaveLobbyRequest: (lobby: string): AppThunkAction<KnownAction> => (dispatch, getState) => {
-        connection.invoke('LeaveLobby', lobby);
-        dispatch({ type: 'LEAVE_LOBBY', lobby });
-    },
     returnToLobby: (lobby: string): AppThunkAction<KnownAction> => (dispatch, getState) => {
         dispatch({ type: 'RETURN_TO_LOBBY', lobby });
+    },
+    dispatchLobbyChange: (action: Lobby.KnownLobbyAction): AppThunkAction<KnownAction> => (dispatch, getState) => {
+        dispatch({ type: 'LOBBY_ACTION', action });
     }
 };
 
@@ -199,32 +171,7 @@ export const reducer: Reducer<DeceptionState> = (state: DeceptionState, action: 
                     ...state.game,
                     hint: action.hint
                 }
-            }
-        case 'JOIN_LOBBY':
-            if (state.lobby.hasJoinedLobby) {
-                return state;
-            }
-            return {
-                ...state,
-                lobby: {
-                    lobbyCode: action.lobby,
-                    hasJoinedLobby: true
-                }
             };
-        case 'CREATE_LOBBY_REQUEST':
-            return state;
-        case 'JOIN_LOBBY_REQUEST':
-            return state;
-        case 'LEAVE_LOBBY':
-            if (action.lobby == state.lobby.lobbyCode) {
-                return unloadedState;
-            }
-            return state;
-        case 'FAILED_JOIN_LOBBY':
-            if (action.lobby != state.lobby.lobbyCode) {
-                return state;
-            }
-            return unloadedState;
         case 'GAME_STARTED':
             return {
                 ...state,
@@ -236,6 +183,11 @@ export const reducer: Reducer<DeceptionState> = (state: DeceptionState, action: 
                 lobby: {
                     ...state.lobby
                 }
+            }
+        case 'LOBBY_ACTION':
+            return {
+                ...state,
+                lobby: Lobby.reducer(state.lobby, action.action)
             }
         default:
             // The following line guarantees that every action in the KnownAction union has been covered by a case above
