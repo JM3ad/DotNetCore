@@ -3,7 +3,7 @@ import { RouteComponentProps } from 'react-router-dom';
 import { connect } from 'react-redux';
 import * as DeceptionStore from '../store/Deception';
 import { ApplicationState } from '../store';
-import { Direction } from '../store/Deception';
+import { Direction, Stage } from '../store/Deception';
 import Lobby from './Lobby';
 import { KnownLobbyAction } from '../store/Lobby';
 
@@ -37,6 +37,14 @@ class Deception extends React.Component<DeceptionProps, DeceptionState> {
     }
     
     private renderGame() {
+        if (this.props.game.gameOver) {
+            return <div>
+                {this.renderHeader()}
+                {this.renderAmbushPlan()}
+                {this.renderAmbushSuccess()}
+                {this.renderResult()}
+            </div>;
+        }
         return <div>
             {this.renderHeader()}
             {this.renderUndercover()}
@@ -44,7 +52,6 @@ class Deception extends React.Component<DeceptionProps, DeceptionState> {
             {this.renderAmbushSuccess()}
             {this.renderHint()}
             {this.renderVoteButtons()}
-            {this.renderResult()}
             </div>
     }
 
@@ -56,34 +63,44 @@ class Deception extends React.Component<DeceptionProps, DeceptionState> {
     }
 
     private renderHint() {
-        if (!!this.props.game.hint) {
-            return <div>Your source is almost certain. "{this.props.game.hint}" he tells you.</div>;
-        }
+        return <div>Your source is almost certain. "{this.props.game.hint}" he tells you.</div>;
     }
 
     private renderResult() {
-        if (this.props.game.gameOver) {
-            return <div>
-                Captains won: {this.props.game.gameResult}
-                <input type="button" id="endGame" onClick={() => { this.props.returnToLobby(this.props.lobby.lobbyCode) }} value="Return To Lobby" />
-            </div>;
-        }
+        const playerWinText = this.props.game.gameResult != this.props.game.isUndercover ?
+            'You won.' :
+            'You lost.' ;
+        const outcomeText = this.props.game.gameResult ?
+            'Word has arrived from Minas Tirith; preparations for war are ready. Our endurance here will surely be remembered.' :
+            'The orcs have overwhelmed Osgiliath, and are already moving onwards towards the capital; great suffering awaits the people of Gondor.'
+        return <div>
+                <div>{playerWinText}</div>
+                <div>{outcomeText}</div>
+                <div><input type="button" id="endGame" onClick={() => { this.props.returnToLobby(this.props.lobby.lobbyCode) }} value="Return To Lobby" /></div>
+            </div>
     }
 
     private renderAmbushPlan() {
-        var night = this.props.game.hasVotedThisRound ?
-            this.props.game.roundsCompleted + 1 :
-            this.props.game.roundsCompleted;
-        if (this.props.game.voteResult.length > 0) {
-            return <div>Night {this.props.game.roundsCompleted }: We will ambush the following routes:
+        if (this.props.game.voteResult.length == 0) {
+            return <div></div>
+        }
+        return this.props.game.stage == Stage.Voting || Stage.WaitingForVotes ?
+            <div>
+                Last Night we ambushed following routes:
                 <ul>
                     {this.props.game.voteResult.map((result, i) => {
                         return <li> {Direction[result]}</li>;
                     })}
                 </ul>
-            </div>
-        }
-        return <div></div>
+            </div> :
+            <div>
+                The lots have been drawn. Tonight we ambush:
+                <ul>
+                    {this.props.game.voteResult.map((result, i) => {
+                        return <li> {Direction[result]}</li>;
+                    })}
+                </ul>
+            </div>;
     }
 
     private renderAmbushSuccess() {

@@ -66,7 +66,7 @@ namespace MeadBros.Hubs
             {
                 Clients.Client(player.connectionId).SendAsync("ReceiveDetails", player.IsUndercover);
             }
-            return Task.CompletedTask;
+            return SendPlayerHints(lobby);
         }
 
         public Task ReceiveVote(string lobby, Direction direction)
@@ -90,7 +90,9 @@ namespace MeadBros.Hubs
 
         public Task SendAmbushResultsAsync(string lobby)
         {
+#if !DEBUG
             Thread.Sleep(5000);
+#endif
             var game = groupCount[lobby];
             var success = game.DidDefeatAttack();
             game.StartNextRound();

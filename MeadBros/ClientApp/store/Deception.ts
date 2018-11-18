@@ -12,6 +12,13 @@ export enum Direction {
     West
 }
 
+export enum Stage {
+    Voting,
+    WaitingForVotes,
+    WaitingForResults,
+    GameComplete
+}
+
 export interface DeceptionState {
     gameHasStarted: boolean,
     game: DeceptionGameState,
@@ -25,6 +32,7 @@ interface DeceptionGameState {
     roundsCompleted: number,
     hasVotedThisRound: boolean,
     hint: string,
+    stage: Stage,
     gameResult: boolean,
     gameOver: boolean
 }
@@ -38,6 +46,7 @@ const unloadedState: DeceptionState = {
         ambushWasSuccess: false,
         hasVotedThisRound: false,
         hint: '',
+        stage: Stage.Voting,
         gameResult: false,
         gameOver: false
     },
@@ -97,7 +106,6 @@ export const actionCreators = {
     },
     startGame: (lobby: string): AppThunkAction<KnownAction> => (dispatch, getState) => {
         connection.invoke('StartGame', lobby);
-        connection.invoke('SendPlayerDetails', lobby);
     },
     returnToLobby: (lobby: string): AppThunkAction<KnownAction> => (dispatch, getState) => {
         dispatch({ type: 'RETURN_TO_LOBBY', lobby });
@@ -122,13 +130,17 @@ export const reducer: Reducer<DeceptionState> = (state: DeceptionState, action: 
                 }
             };
         case 'RECEIVE_AMBUSH_RESULTS':
+            if (state.game.stage != Stage.WaitingForResults) {
+                return state;
+            }
             return {
                 ...state,
                 game: {
                     ...state.game,
                     ambushWasSuccess: action.ambushSucceeded,
                     roundsCompleted: state.game.roundsCompleted + 1,
-                    hasVotedThisRound: false
+                    hasVotedThisRound: false,
+                    stage: Stage.Voting
                 }
             };
         case 'RECEIVE_VOTE_RESULTS':
@@ -136,7 +148,8 @@ export const reducer: Reducer<DeceptionState> = (state: DeceptionState, action: 
                 ...state,
                 game: {
                     ...state.game,
-                    voteResult: action.votes
+                    voteResult: action.votes,
+                    stage: Stage.WaitingForResults
                 }
             };
         case 'VOTE':
@@ -144,6 +157,7 @@ export const reducer: Reducer<DeceptionState> = (state: DeceptionState, action: 
                 ...state,
                 game: {
                     ...state.game,
+                    stage: Stage.WaitingForVotes,
                     hasVotedThisRound: true
                 }
             };
@@ -160,6 +174,7 @@ export const reducer: Reducer<DeceptionState> = (state: DeceptionState, action: 
                 ...state,
                 game: {
                     ...state.game,
+                    stage: Stage.GameComplete,
                     gameResult: action.result,
                     gameOver: true
                 }
