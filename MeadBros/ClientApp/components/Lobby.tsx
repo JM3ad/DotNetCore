@@ -16,27 +16,61 @@ export default class Deception extends React.Component<LobbyProps, LocalLobbySta
     }
 
     public render() {
-        if (this.props.hasJoinedLobby) {
-            return <div>
+        return <div>
+            <h3 className="text-center">Gather your war council</h3>
+            {this.props.hasJoinedLobby ? this.renderInLobby() : this.renderOutOfLobby()}
+        </div>;
+    }
+
+    private renderInLobby() {
+        return <div>
+            <div className="row">
                 {this.renderLobbyCode()}
-                <input type="button" id="leaveLobbyButton" onClick={() => { this.props.callbackHandler({ type: 'LEAVE_LOBBY', lobby: this.props.lobbyCode }) }} value="Leave Lobby" />
-                <input type="button" id="startGameButton" onClick={() => { this.props.callbackHandler({ type: 'START_GAME', lobby: this.props.lobbyCode }) }} value="Start Game" />
+            </div>
+            <br />
+            <div>
+                {this.renderPlayerList()}
+            </div>
+            <br />
+            <div className="row">
+                <input type="button" id="startGameButton" className="btn" onClick={() => { this.props.callbackHandler({ type: 'START_GAME', lobby: this.props.lobbyCode }) }} value="Start Game" />
+            </div>
+            <br />
+            <div className="row">
+                <input type="button" id="leaveLobbyButton" className="btn" onClick={() => { this.props.callbackHandler({ type: 'LEAVE_LOBBY', lobby: this.props.lobbyCode }) }} value="Leave Lobby" />
+            </div>
             </div>;
-        }
-        return <div>{this.renderOutOfLobby()}</div>;
     }
 
     private renderOutOfLobby() {
         return <div>
-            Lobby: <input type="text" id="lobbyInput" value={this.state.currentLobbyText} onChange={this.handleLobbyTextUpdate} />
-            <input type="button" id="joinLobbyButton" onClick={() => { this.props.callbackHandler({ type: 'JOIN_LOBBY_REQUEST', lobby: this.state.currentLobbyText }) }} value="Join Lobby" />
-            <input type="button" id="createLobbyButton" onClick={() => { this.props.callbackHandler({ type: 'CREATE_LOBBY_REQUEST' }) }} value="Create Lobby" />
-        </div>
+            <br />
+            <div className="row">
+                <input type="button" className="btn" id="createLobbyButton" onClick={() => { this.props.callbackHandler({ type: 'CREATE_LOBBY_REQUEST' }) }} value="Create New Game" />
+            </div>
+            <br />
+            <br />
+            <div className="row col-sm-4">
+                <input type="text" id="lobbyInput" className="form-control" value={this.state.currentLobbyText} onChange={this.handleLobbyTextUpdate} placeholder="Lobby Code" />
+                <input type="button" className="btn" id="joinLobbyButton" onClick={() => { this.props.callbackHandler({ type: 'JOIN_LOBBY_REQUEST', lobby: this.state.currentLobbyText }) }} value="Join Game" />
+            </div>
+        </div>;
+    }
+
+    private renderPlayerList() {
+        return <div>
+            <ol>
+                <li>Player 1</li>
+                <li>Player 2</li>
+                <li>Player 3</li>
+                <li>Player 4</li>
+            </ol>
+            </div>
     }
 
     private renderLobbyCode() {
         return <div>
-            <p>Game Code: <span id="lobbyCode">{this.props.lobbyCode}</span></p>
+            <h4>Game Code: <span id="lobbyCode">{this.props.lobbyCode}</span></h4>
         </div>;
     }
 

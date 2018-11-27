@@ -30,6 +30,7 @@ interface DeceptionGameState {
     voteResult: Direction[],
     ambushWasSuccess: boolean,
     roundsCompleted: number,
+    attacksSustained: number,
     hasVotedThisRound: boolean,
     hint: string,
     stage: Stage,
@@ -43,6 +44,7 @@ const unloadedState: DeceptionState = {
         isUndercover: false,
         voteResult: [],
         roundsCompleted: 0,
+        attacksSustained: 0,
         ambushWasSuccess: false,
         hasVotedThisRound: false,
         hint: '',
@@ -139,6 +141,7 @@ export const reducer: Reducer<DeceptionState> = (state: DeceptionState, action: 
                     ...state.game,
                     ambushWasSuccess: action.ambushSucceeded,
                     roundsCompleted: state.game.roundsCompleted + 1,
+                    attacksSustained: state.game.attacksSustained + (action.ambushSucceeded ? 0 : 1),
                     hasVotedThisRound: false,
                     stage: Stage.Voting
                 }

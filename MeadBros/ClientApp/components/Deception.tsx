@@ -22,14 +22,17 @@ class Deception extends React.Component<DeceptionProps, DeceptionState> {
     }
 
     public render() {
-        if (!this.props.gameHasStarted) {
-            return <div>
-                <Lobby callbackHandler={this.lobbyCallbackHandler} hasJoinedLobby={this.props.lobby.hasJoinedLobby} lobbyCode={this.props.lobby.lobbyCode} />
-            </div>
+        //This protects against initial load race conditions when the props haven't yet been set
+        if (!this.props.lobby) {
+            return <div></div>;
         }
-        return <div>
-            {this.renderGame()}
+        return <div className="text-center">
+            {this.props.gameHasStarted ? this.renderGame() : this.renderLobby()}
         </div>
+    }
+
+    private renderLobby() {
+        return <Lobby callbackHandler={this.lobbyCallbackHandler} hasJoinedLobby={this.props.lobby.hasJoinedLobby} lobbyCode={this.props.lobby.lobbyCode} />
     }
 
     lobbyCallbackHandler = (action: KnownLobbyAction) => {
@@ -57,13 +60,17 @@ class Deception extends React.Component<DeceptionProps, DeceptionState> {
 
     private renderHeader() {
         const dayNumber = this.props.game.roundsCompleted + 1;
-        return <div><h3>Day {dayNumber}</h3>
+        return <div>
+            <div>
+                <div className="text-right">Fortification health remaining: {3 - this.props.game.attacksSustained}</div>
+                <h3 className="col-sm-4">Day {dayNumber}</h3>
+            </div>
             <p>You gather with the other captains to plan for the night to come</p>
         </div>;
     }
 
     private renderHint() {
-        return <div>Your source is almost certain. "{this.props.game.hint}" he tells you.</div>;
+        return <div>Your source is almost certain:<br/><b>"{this.props.game.hint}"</b></div>;
     }
 
     private renderResult() {
@@ -86,12 +93,10 @@ class Deception extends React.Component<DeceptionProps, DeceptionState> {
         }
         return this.props.game.stage == Stage.Voting || Stage.WaitingForVotes ?
             <div>
-                Last Night we ambushed following routes:
-                <ul>
-                    {this.props.game.voteResult.map((result, i) => {
-                        return <li> {Direction[result]}</li>;
-                    })}
-                </ul>
+                Last night we ambushed the following routes:
+                {this.props.game.voteResult.map((result, i) => {
+                    return <p>{Direction[result]}</p>
+                })}
             </div> :
             <div>
                 The lots have been drawn. Tonight we ambush:
@@ -128,11 +133,13 @@ class Deception extends React.Component<DeceptionProps, DeceptionState> {
     private renderVoteButtons() {
         if (!this.props.game.hasVotedThisRound) {
             return <div>
+                <br />
                 <div>When you're ready, submit your vote for which routes to ambush. The top two choices will be selected.</div>
-                <input type="button" id="voteNorth" onClick={() => { this.props.vote(this.props.lobby.lobbyCode, DeceptionStore.Direction.North) }} value="North" />
-                <input type="button" id="voteEast" onClick={() => { this.props.vote(this.props.lobby.lobbyCode, DeceptionStore.Direction.East) }} value="East" />
-                <input type="button" id="voteSouth" onClick={() => { this.props.vote(this.props.lobby.lobbyCode, DeceptionStore.Direction.South) }} value="South" />
-                <input type="button" id="voteWest" onClick={() => { this.props.vote(this.props.lobby.lobbyCode, DeceptionStore.Direction.West) }} value="West" />
+                <br />
+                <input type="button" className="btn" onClick={() => { this.props.vote(this.props.lobby.lobbyCode, DeceptionStore.Direction.North) }} value="North" />
+                <input type="button" className="btn" onClick={() => { this.props.vote(this.props.lobby.lobbyCode, DeceptionStore.Direction.East) }} value="East" />
+                <input type="button" className="btn" onClick={() => { this.props.vote(this.props.lobby.lobbyCode, DeceptionStore.Direction.South) }} value="South" />
+                <input type="button" className="btn" onClick={() => { this.props.vote(this.props.lobby.lobbyCode, DeceptionStore.Direction.West) }} value="West" />
             </div>
         }
     }
