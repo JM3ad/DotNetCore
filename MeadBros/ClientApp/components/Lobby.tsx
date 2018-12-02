@@ -17,8 +17,8 @@ export default class Deception extends React.Component<LobbyProps, LocalLobbySta
 
     public render() {
         return <div>
-            <h3 className="text-center">Gather your war council</h3>
-            {this.props.hasJoinedLobby ? this.renderInLobby() : this.renderOutOfLobby()}
+                <h3 className="text-center">Gather your war council</h3>
+                {this.props.hasJoinedLobby ? this.renderInLobby() : this.renderOutOfLobby()}
         </div>;
     }
 
@@ -28,8 +28,12 @@ export default class Deception extends React.Component<LobbyProps, LocalLobbySta
                 {this.renderLobbyCode()}
             </div>
             <br />
-            <div>
-                {this.renderPlayerList()}
+            <div className="row">
+                <div className="col-sm-3"></div>
+                <div className="col-sm-6">
+                    {this.renderPlayerList()}
+                </div>
+                <div className="col-sm-3"></div>
             </div>
             <br />
             <div className="row">
@@ -50,7 +54,7 @@ export default class Deception extends React.Component<LobbyProps, LocalLobbySta
             </div>
             <br />
             <br />
-            <div className="row col-sm-4">
+            <div className="row">
                 <input type="text" id="lobbyInput" className="form-control" value={this.state.currentLobbyText} onChange={this.handleLobbyTextUpdate} placeholder="Lobby Code" />
                 <input type="button" className="btn" id="joinLobbyButton" onClick={() => { this.props.callbackHandler({ type: 'JOIN_LOBBY_REQUEST', lobby: this.state.currentLobbyText }) }} value="Join Game" />
             </div>

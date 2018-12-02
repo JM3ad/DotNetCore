@@ -27,7 +27,10 @@ class Deception extends React.Component<DeceptionProps, DeceptionState> {
             return <div></div>;
         }
         return <div className="text-center">
-            {this.props.gameHasStarted ? this.renderGame() : this.renderLobby()}
+            <div className="col-sm-2"></div>
+            <div className="col-sm-8">
+                {this.props.gameHasStarted ? this.renderGame() : this.renderLobby()}
+            </div>
         </div>
     }
 
@@ -60,12 +63,15 @@ class Deception extends React.Component<DeceptionProps, DeceptionState> {
 
     private renderHeader() {
         const dayNumber = this.props.game.roundsCompleted + 1;
-        return <div>
-            <div>
-                <div className="text-right">Fortification health remaining: {3 - this.props.game.attacksSustained}</div>
-                <h3 className="col-sm-4">Day {dayNumber}</h3>
+        return <div className="col-xs-12">
+            <div className="col-xs-12">
+                <div className="col-sm-3"></div>
+                <h3 className="col-xs-12 col-sm-6">Day {dayNumber}</h3>
+                <div className="col-sm-3">Fortification health remaining: {3 - this.props.game.attacksSustained}</div>
             </div>
-            <p>You gather with the other captains to plan for the night to come</p>
+            <div className="col-xs-12">
+                <p>{!this.props.game.gameOver ? 'You gather with the other captains to plan for the night to come' : ''}</p>
+            </div>
         </div>;
     }
 
@@ -81,8 +87,10 @@ class Deception extends React.Component<DeceptionProps, DeceptionState> {
             'Word has arrived from Minas Tirith; preparations for war are ready. Our endurance here will surely be remembered.' :
             'The orcs have overwhelmed Osgiliath, and are already moving onwards towards the capital; great suffering awaits the people of Gondor.'
         return <div>
-                <div>{playerWinText}</div>
+                <div><b>{playerWinText}</b></div>
+                <br/>
                 <div>{outcomeText}</div>
+                <br/>
                 <div><input type="button" id="endGame" onClick={() => { this.props.returnToLobby(this.props.lobby.lobbyCode) }} value="Return To Lobby" /></div>
             </div>
     }
@@ -114,7 +122,6 @@ class Deception extends React.Component<DeceptionProps, DeceptionState> {
                 "Our men returned victorious. Those orcs had no idea what was coming" :
                 "I don't know how we survived the night. They clearly bypassed our men entirely";
             return <div>
-                <p>You gather with the other commanders to review the results of last night</p>
                 <p>{result}</p>
             </div>
         }
@@ -136,10 +143,20 @@ class Deception extends React.Component<DeceptionProps, DeceptionState> {
                 <br />
                 <div>When you're ready, submit your vote for which routes to ambush. The top two choices will be selected.</div>
                 <br />
+                <div className="col-xs-12">
                 <input type="button" className="btn" onClick={() => { this.props.vote(this.props.lobby.lobbyCode, DeceptionStore.Direction.North) }} value="North" />
-                <input type="button" className="btn" onClick={() => { this.props.vote(this.props.lobby.lobbyCode, DeceptionStore.Direction.East) }} value="East" />
-                <input type="button" className="btn" onClick={() => { this.props.vote(this.props.lobby.lobbyCode, DeceptionStore.Direction.South) }} value="South" />
-                <input type="button" className="btn" onClick={() => { this.props.vote(this.props.lobby.lobbyCode, DeceptionStore.Direction.West) }} value="West" />
+                </div>
+                <div className="col-xs-12">
+                    <div className="col-xs-6 col-sm-4 col-sm-offset-2">
+                        <input type="button" className="btn" onClick={() => { this.props.vote(this.props.lobby.lobbyCode, DeceptionStore.Direction.West) }} value="West" />
+                    </div>
+                    <div className="col-xs-6 col-sm-4">
+                        <input type="button" className="btn" onClick={() => { this.props.vote(this.props.lobby.lobbyCode, DeceptionStore.Direction.East) }} value="East" />
+                    </div>
+                </div>
+                <div className="col-xs-12">
+                    <input type="button" className="btn" onClick={() => { this.props.vote(this.props.lobby.lobbyCode, DeceptionStore.Direction.South) }} value="South" />
+                </div>
             </div>
         }
     }
