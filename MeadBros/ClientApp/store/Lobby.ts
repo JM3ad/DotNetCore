@@ -7,12 +7,16 @@ import { connection } from '../configureStore';
 export interface LobbyState {
     callbackHandler: (action: KnownLobbyAction) => void,
     lobbyCode: string,
+    name: string,
+    players: string[],
     hasJoinedLobby: boolean
 }
 
 export const unloadedState: LobbyState = {
     callbackHandler: () => {},
     lobbyCode: '',
+    name: '',
+    players: [],
     hasJoinedLobby: false
 }
 
@@ -27,12 +31,14 @@ interface LeaveLobbyAction { type: 'LEAVE_LOBBY'; lobby: string };
 interface CreateLobbyRequestAction { type: 'CREATE_LOBBY_REQUEST' };
 interface FailedJoinLobbyAction { type: 'FAILED_JOIN_LOBBY'; lobby: string };
 interface StartGameAction { type: 'START_GAME'; lobby: string };
+interface UpdatePlayersAction { type: 'UPDATE_PLAYERS'; players: string[] };
+interface SetNameAction { type: 'SET_NAME'; name: string };
 
 // Declare a 'discriminated union' type. This guarantees that all references to 'type' properties contain one of the
 // declared type strings (and not any other arbitrary string).
 export type KnownLobbyAction = JoinLobbyRequestAction | JoinLobbyAction |
     CreateLobbyRequestAction | LeaveLobbyAction | FailedJoinLobbyAction |
-    StartGameAction;
+    StartGameAction | UpdatePlayersAction | SetNameAction;
 
 export function startListening(dispatch: (action: KnownLobbyAction)=>void) {
     connection.on('FailedJoinLobby', data => {
@@ -40,6 +46,9 @@ export function startListening(dispatch: (action: KnownLobbyAction)=>void) {
     });
     connection.on('JoinedLobby', data => {
         dispatch({ type: 'JOIN_LOBBY', lobby: data });
+    });
+    connection.on('UpdatedPlayerList', data => {
+        dispatch({ type: 'UPDATE_PLAYERS', players: data });
     });
 }
 
@@ -49,7 +58,6 @@ export function startListening(dispatch: (action: KnownLobbyAction)=>void) {
 export const reducer: Reducer<LobbyState> = (state: LobbyState, action: KnownLobbyAction) => {
     switch (action.type) {
         case 'JOIN_LOBBY':
-            console.log("joining");
             if (state.hasJoinedLobby) {
                 return state;
             }
@@ -59,11 +67,10 @@ export const reducer: Reducer<LobbyState> = (state: LobbyState, action: KnownLob
                 hasJoinedLobby: true
             };
         case 'CREATE_LOBBY_REQUEST':
-            connection.invoke('CreateLobby');
+            connection.invoke('CreateLobby', state.name);
             return state;
         case 'JOIN_LOBBY_REQUEST':
-            console.log("testing");
-            connection.invoke('JoinLobby', action.lobby);
+            connection.invoke('JoinLobby', action.lobby, state.name);
             return state;
         case 'LEAVE_LOBBY':
             connection.invoke('LeaveLobby', action.lobby);
@@ -80,6 +87,16 @@ export const reducer: Reducer<LobbyState> = (state: LobbyState, action: KnownLob
             connection.invoke('StartGame', action.lobby);
             connection.invoke('SendPlayerDetails', action.lobby);
             return state;
+        case 'UPDATE_PLAYERS':
+            return {
+                ...state,
+                players: action.players
+            }
+        case 'SET_NAME':
+            return {
+                ...state,
+                name: action.name
+            }
         default:
             // The following line guarantees that every action in the KnownAction union has been covered by a case above
             const exhaustiveCheck: never = action;

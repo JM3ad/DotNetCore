@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
-namespace MeadBros.Models
+﻿namespace MeadBros.Models
 {
     public enum Direction
     {
@@ -14,16 +9,13 @@ namespace MeadBros.Models
         West
     }
 
-    public class DeceptionPlayer
+    public class DeceptionPlayer : Player
     {
-        public string Name { get; set; }
-        public string connectionId { get; private set; }
         public bool IsUndercover { get; set; }
         public Direction Vote { get; set; }
 
-        public DeceptionPlayer(string connectionId)
-        {
-            this.connectionId = connectionId;
-        }
+        public DeceptionPlayer() : base() { }
+
+        public DeceptionPlayer(string connectionId) : base(connectionId) {}
     }
 }

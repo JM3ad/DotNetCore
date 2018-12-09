@@ -35,7 +35,13 @@ class Deception extends React.Component<DeceptionProps, DeceptionState> {
     }
 
     private renderLobby() {
-        return <Lobby callbackHandler={this.lobbyCallbackHandler} hasJoinedLobby={this.props.lobby.hasJoinedLobby} lobbyCode={this.props.lobby.lobbyCode} />
+        return <Lobby
+            callbackHandler={this.lobbyCallbackHandler}
+            hasJoinedLobby={this.props.lobby.hasJoinedLobby}
+            lobbyCode={this.props.lobby.lobbyCode}
+            name={this.props.lobby.name}
+            players={this.props.lobby.players}
+        />
     }
 
     lobbyCallbackHandler = (action: KnownLobbyAction) => {

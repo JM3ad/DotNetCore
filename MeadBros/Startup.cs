@@ -46,7 +46,7 @@ namespace MeadBros
 
             app.UseSignalR(routes =>
             {
-                routes.MapHub<GameHub>("/gameHub");
+                routes.MapHub<DeceptionHub>("/gameHub");
             });
 
             app.UseMvc(routes =>

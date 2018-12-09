@@ -4,21 +4,34 @@ import * as LobbyStore from '../store/Lobby';
 export type LobbyProps = LobbyStore.LobbyState;
 
 interface LocalLobbyState {
-    currentLobbyText: string
+    currentLobbyText: string,
+    currentNameText: string
 }
 
-export default class Deception extends React.Component<LobbyProps, LocalLobbyState> {
+export default class Lobby extends React.Component<LobbyProps, LocalLobbyState> {
 
     constructor(props: LobbyProps) {
         super(props);
-        this.state = { currentLobbyText: ''};
+        this.state = { currentLobbyText: '', currentNameText: '' };
         this.handleLobbyTextUpdate = this.handleLobbyTextUpdate.bind(this);
+        this.handleNameUpdate = this.handleNameUpdate.bind(this);
     }
 
     public render() {
         return <div>
                 <h3 className="text-center">Gather your war council</h3>
-                {this.props.hasJoinedLobby ? this.renderInLobby() : this.renderOutOfLobby()}
+                { !this.props.name ? this.renderEnterName() :
+                    this.props.hasJoinedLobby ? this.renderInLobby() : this.renderOutOfLobby()
+                }
+        </div>;
+    }
+
+    private renderEnterName() {
+        return <div>
+            <div className="row">
+                <input type="text" className="form-control" value={this.state.currentNameText} onChange={this.handleNameUpdate} placeholder="Name" />
+                <input type="button" className="btn" onClick={() => { this.setName() }} value="Enter Name" />
+            </div>
         </div>;
     }
 
@@ -64,10 +77,9 @@ export default class Deception extends React.Component<LobbyProps, LocalLobbySta
     private renderPlayerList() {
         return <div>
             <ol>
-                <li>Player 1</li>
-                <li>Player 2</li>
-                <li>Player 3</li>
-                <li>Player 4</li>
+                {this.props.players.map((playerName) => {
+                    return <li>{playerName}</li>
+                })}
             </ol>
             </div>
     }
@@ -78,7 +90,17 @@ export default class Deception extends React.Component<LobbyProps, LocalLobbySta
         </div>;
     }
 
+    private setName() {
+        if (this.state.currentNameText) {
+            this.props.callbackHandler({ type: 'SET_NAME', name: this.state.currentNameText });
+        }
+    }
+
     private handleLobbyTextUpdate(event: React.FormEvent<HTMLInputElement>) {
         this.setState({ currentLobbyText: event.currentTarget.value });
+    }
+
+    private handleNameUpdate(event: React.FormEvent<HTMLInputElement>) {
+        this.setState({ currentNameText: event.currentTarget.value });
     }
 }

@@ -5,18 +5,18 @@ using System.Threading.Tasks;
 
 namespace MeadBros.Models
 {
-    public class DeceptionGame
+    public class DeceptionGame : Game<DeceptionPlayer>
     {
-        public List<DeceptionPlayer> players = new List<DeceptionPlayer>();
         public List<Direction> attacks = new List<Direction>();
         public List<bool> defeatedOrcs = new List<bool>();
-        public string lobby;
         public static Dictionary<Direction, int> votes = GetResetVotes();
         private int roundNumber = 0;
         private const int numberOfRounds = 5;
         private const int failuresAllowed = 2;
 
-        public void GenerateGame()
+        public DeceptionGame() : base() {}
+
+        public override void GenerateGame()
         {
             GenerateAttackOrder(numberOfRounds);
             RandomiseAgent();
@@ -37,8 +37,11 @@ namespace MeadBros.Models
         private void RandomiseAgent()
         {
             players.OrderBy(p => Guid.NewGuid());
-            players.ForEach(p => p.IsUndercover = false);
-            players[0].IsUndercover = true;
+            for(int i = 0; i < players.Count; i++)
+            {
+                var deceptionPlayer = players[i];
+                deceptionPlayer.IsUndercover = i == 0 ? true : false;
+            }
         }
 
         public void StartNextRound()
@@ -47,7 +50,7 @@ namespace MeadBros.Models
             {
                 GetResetVotes();
                 roundNumber++;
-                foreach( var player in players)
+                foreach(var player in players)
                 {
                     player.Vote = Direction.Unknown;
                 }
@@ -73,21 +76,6 @@ namespace MeadBros.Models
         public bool DidDefeatAttack()
         {
             return GetResultOfVote().Contains(attacks[roundNumber]);
-        }
-
-        public void AddPlayer(string connectionId)
-        {
-            players.Add(new DeceptionPlayer(connectionId));
-        }
-
-        public void RemovePlayer(string connectionId)
-        {
-            players.RemoveAll(p => p.connectionId == connectionId);
-        }
-
-        public bool IsEmpty()
-        {
-            return players.Count == 0;
         }
 
         public string GetHintForPlayer(DeceptionPlayer player)

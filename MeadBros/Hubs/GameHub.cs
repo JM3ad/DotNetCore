@@ -8,22 +8,23 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace MeadBros.Hubs
 {
-    public class GameHub : Hub
+    public abstract class GameHub<Tgame,Tplayer> : Hub where Tplayer: Player, new() where Tgame : Game<Tplayer>, new()
     {
-        private static Dictionary<string, DeceptionGame> groupCount = new Dictionary<string, DeceptionGame>();
+        protected static Dictionary<string, Tgame> groupCount = new Dictionary<string, Tgame>();
 
-        public Task JoinLobby(string lobby)
+        public Task JoinLobby(string lobby, string playerName)
         {
             if (!groupCount.ContainsKey(lobby))
             {
                 return Clients.Caller.SendAsync("FailedJoinLobby", lobby);
             }
-            groupCount[lobby].AddPlayer(Context.ConnectionId);
+            groupCount[lobby].AddPlayer(Context.ConnectionId, playerName);
             Clients.Caller.SendAsync("JoinedLobby", lobby);
-            return Groups.AddToGroupAsync(Context.ConnectionId, lobby);
+            return Groups.AddToGroupAsync(Context.ConnectionId, lobby)
+                .ContinueWith((a) => UpdatePlayerList(lobby));
         }
 
-        public Task CreateLobby()
+        public Task CreateLobby(string playerName)
         {
             var possibleChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
             var stringChars = new char[6];
@@ -34,8 +35,8 @@ namespace MeadBros.Hubs
                 stringChars[i] = possibleChars[random.Next(possibleChars.Length)];
             }
             var lobby = new string(stringChars);
-            groupCount.Add(lobby, new DeceptionGame() { lobby = lobby });
-            return JoinLobby(lobby);
+            groupCount.Add(lobby, new Tgame() { lobby = lobby });
+            return JoinLobby(lobby, playerName);
         }
 
         public Task LeaveLobby(string lobby)
@@ -49,80 +50,19 @@ namespace MeadBros.Hubs
             {
                 groupCount.Remove(lobby);
             }
-            return Groups.RemoveFromGroupAsync(Context.ConnectionId, lobby);
+            return Groups.RemoveFromGroupAsync(Context.ConnectionId, lobby)
+                .ContinueWith((a) => UpdatePlayerList(lobby));
         }
-
-        public Task StartGame(string lobby)
-        {
-            groupCount[lobby].GenerateGame();
-            Clients.Group(lobby).SendAsync("GameStarted", lobby);
-            return SendPlayerDetails(lobby);
-        }
-
-        public Task SendPlayerDetails(string lobby)
-        {
-            var game = groupCount[lobby];
-            foreach(var player in game.players)
-            {
-                Clients.Client(player.connectionId).SendAsync("ReceiveDetails", player.IsUndercover);
-            }
-            return SendPlayerHints(lobby);
-        }
-
-        public Task ReceiveVote(string lobby, Direction direction)
-        {
-            var game = groupCount[lobby];
-            game.players.Where(p => p.connectionId == Context.ConnectionId).First().Vote = direction;
-            if (game.players.All(p => p.Vote != Direction.Unknown))
-            {
-                return ResolveRound(lobby);
-            }
-            return Task.CompletedTask;
-        }
-
-        public Task ResolveRound(string lobby)
-        {
-            var game = groupCount[lobby];
-            var result = game.GetResultOfVote();
-            Clients.Group(lobby).SendAsync("VoteResults", result);
-            return SendAmbushResultsAsync(lobby);
-        }
-
-        public Task SendAmbushResultsAsync(string lobby)
-        {
-#if !DEBUG
-            Thread.Sleep(5000);
-#endif
-            var game = groupCount[lobby];
-            var success = game.DidDefeatAttack();
-            game.StartNextRound();
-            Clients.Group(lobby).SendAsync("AmbushResult", success);
-            if (!game.IsFinished())
-            {
-                return SendPlayerHints(lobby);
-            }
-            return SendGameCompletedState(lobby);
-        }
-
-        public Task SendPlayerHints(string lobby)
-        {
-            var game = groupCount[lobby];
-            foreach (var player in game.players)
-            {
-                Clients.Client(player.connectionId).SendAsync("ReceiveHint", game.GetHintForPlayer(player));
-            }
-            return Task.CompletedTask;
-        }
-
-        public Task SendGameCompletedState(string lobby)
-        {
-            var game = groupCount[lobby];
-            return Clients.Group(lobby).SendAsync("GameComplete", game.HaveCaptainsWon());
-        }
-
+        
         public Task SendMessage(string message, string lobby)
         {
             return Clients.Group(lobby).SendAsync("ReceiveMessage", message);
+        }
+
+        public Task UpdatePlayerList(string lobby)
+        {
+            var players = groupCount[lobby].players.Select(p => p.Name);
+            return Clients.Group(lobby).SendAsync("UpdatedPlayerList", players);
         }
     }
 }
